@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const { api, showError, loadAuteurs, esc } = window.Biblio;
+  const { api, showError, loadAuteurs, loadAdherents, esc } = window.Biblio;
 
   const backdrop = document.getElementById("modal-backdrop");
   const title = document.getElementById("modal-title");
@@ -73,6 +73,63 @@
       try {
         await api(`/api/auteurs/${delBtn.dataset.delAuteur}`, { method: "DELETE" });
         loadAuteurs();
+      } catch (err) { showError(err.message); }
+    }
+  });
+
+  /* ---------- Adhérent : ajout / modification ---------- */
+  document.getElementById("btn-add-adherent").addEventListener("click", () => {
+    openModal("Ajouter un adhérent", `
+      <div class="alert danger" hidden></div>
+      <label>Nom<input class="field" id="f-adh-nom" placeholder="Ex. Aminata Diallo"></label>
+      <label>Téléphone<input class="field" id="f-adh-tel" placeholder="Ex. 77 123 45 67"></label>
+      <label>Email<input class="field" id="f-adh-email" placeholder="Ex. aminata@email.com"></label>
+      <button class="btn accent" id="f-adh-save">Enregistrer</button>
+    `);
+    document.getElementById("f-adh-save").addEventListener("click", async () => {
+      try {
+        const nom = document.getElementById("f-adh-nom").value.trim();
+        const telephone = document.getElementById("f-adh-tel").value.trim() || null;
+        const email = document.getElementById("f-adh-email").value.trim() || null;
+        if (!nom) return formError("Le nom est obligatoire.");
+        await api("/api/adherents", { method: "POST", body: JSON.stringify({ nom, telephone, email }) });
+        backdrop.classList.remove("open");
+        loadAdherents();
+      } catch (e) { formError(e.message); }
+    });
+  });
+
+  document.getElementById("adherents-body").addEventListener("click", async (e) => {
+    const editBtn = e.target.closest("[data-edit-adherent]");
+    const delBtn = e.target.closest("[data-del-adherent]");
+    if (editBtn) {
+      try {
+        const a = await api(`/api/adherents/${editBtn.dataset.editAdherent}`);
+        openModal("Modifier un adhérent", `
+          <div class="alert danger" hidden></div>
+          <label>Nom<input class="field" id="f-adh-nom" value="${esc(a.nom)}"></label>
+          <label>Téléphone<input class="field" id="f-adh-tel" value="${esc(a.telephone)}"></label>
+          <label>Email<input class="field" id="f-adh-email" value="${esc(a.email)}"></label>
+          <button class="btn accent" id="f-adh-save">Enregistrer</button>
+        `);
+        document.getElementById("f-adh-save").addEventListener("click", async () => {
+          try {
+            const nom = document.getElementById("f-adh-nom").value.trim();
+            const telephone = document.getElementById("f-adh-tel").value.trim() || null;
+            const email = document.getElementById("f-adh-email").value.trim() || null;
+            if (!nom) return formError("Le nom est obligatoire.");
+            await api(`/api/adherents/${a.id}`, { method: "PUT", body: JSON.stringify({ nom, telephone, email }) });
+            backdrop.classList.remove("open");
+            loadAdherents();
+          } catch (err) { formError(err.message); }
+        });
+      } catch (err) { showError(err.message); }
+    }
+    if (delBtn) {
+      if (!confirm("Supprimer cet adhérent ?")) return;
+      try {
+        await api(`/api/adherents/${delBtn.dataset.delAdherent}`, { method: "DELETE" });
+        loadAdherents();
       } catch (err) { showError(err.message); }
     }
   });
