@@ -3,6 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 
+const auteursRoutes = require('./routes/auteurs.routes');
+const adherentsRoutes = require('./routes/adherents.routes');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -18,6 +21,9 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
+
+app.use('/api/auteurs', auteursRoutes);
+app.use('/api/adherents', adherentsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Serveur demarre sur http://localhost:${PORT}`);
