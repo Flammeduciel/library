@@ -5,6 +5,7 @@ const pool = require('./db');
 
 const auteursRoutes = require('./routes/auteurs.routes');
 const adherentsRoutes = require('./routes/adherents.routes');
+const livresRoutes = require('./routes/livres.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/api/auteurs', auteursRoutes);
 app.use('/api/adherents', adherentsRoutes);
+app.use('/api/livres', livresRoutes);
 
 app.listen(PORT, () => {
   console.log(`Serveur demarre sur http://localhost:${PORT}`);
