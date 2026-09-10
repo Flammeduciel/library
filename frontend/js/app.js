@@ -194,6 +194,27 @@
   }
   document.getElementById("emprunt-filtre").addEventListener("change", loadEmprunts);
 
+  /* ---------- Export CSV des retards (bonus) ---------- */
+  document.getElementById("btn-export-csv").addEventListener("click", async () => {
+    try {
+      const data = await api("/api/emprunts?statut=en_retard");
+      if (!data.length) { showError("Aucun emprunt en retard à exporter."); return; }
+      const rows = [["Livre", "Auteur", "Adherent", "Date emprunt", "Retour prevu"]];
+      data.forEach((x) => rows.push([
+        x.livre_titre, x.auteur_nom, x.adherent_nom,
+        new Date(x.date_emprunt).toLocaleDateString("fr-FR"),
+        new Date(x.date_retour_prevue).toLocaleDateString("fr-FR"),
+      ]));
+      const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "emprunts-en-retard.csv";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { showError(e.message); }
+  });
+
   // Expose pour les étapes suivantes (formulaires J2/J3)
   window.Biblio = { api, showError, loadLivres, loadAuteurs, loadAdherents, loadEmprunts, loadDashboard, esc };
 

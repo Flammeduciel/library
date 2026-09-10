@@ -128,12 +128,13 @@
       <section id="page-emprunts" hidden>
         <div class="page-head">
           <div><h1>Emprunts</h1><p>En cours et en retard — les retards sont surlignés.</p></div>
-          <div style="display:flex; gap:8px;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <select class="field" id="emprunt-filtre">
               <option value="">Tous</option>
               <option value="en_cours">En cours</option>
               <option value="en_retard">En retard</option>
             </select>
+            <button class="btn" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> Export CSV retards</button>
             <button class="btn accent" id="btn-add-emprunt"><i class="fa-solid fa-plus"></i> Nouvel emprunt</button>
           </div>
         </div>
