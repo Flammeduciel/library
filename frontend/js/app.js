@@ -61,13 +61,14 @@
   document.getElementById("dash-refresh").addEventListener("click", loadDashboard);
 
   /* ---------- Livres (lecture + recherche + pagination) ---------- */
-  let livrePage = 1, livreQ = "", livreAuteur = "";
+  let livrePage = 1, livreQ = "", livreAuteur = "", livreDispo = "";
   const LIVRE_LIMIT = 10;
   async function loadLivres() {
     try {
       const params = new URLSearchParams({ page: livrePage, limit: LIVRE_LIMIT });
       if (livreQ) params.set("q", livreQ);
       if (livreAuteur) params.set("auteur", livreAuteur);
+      if (livreDispo) params.set("disponible", livreDispo);
       const data = await api("/api/livres?" + params.toString());
       document.getElementById("livres-total").textContent = `${data.pagination.total} au total`;
       document.getElementById("livres-page-info").textContent = `Page ${data.pagination.page} / ${Math.max(1, data.pagination.pages)}`;
@@ -84,19 +85,26 @@
             <button class="btn small danger" data-del-livre="${l.id}">Supprimer</button>
           </td>
         </tr>`).join("") : `<tr class="empty-row"><td colspan="5">Aucun livre trouvé.</td></tr>`;
-      document.getElementById("livre-clear").hidden = !(livreQ || livreAuteur);
+      document.getElementById("livre-clear").hidden = !(livreQ || livreAuteur || livreDispo);
     } catch (e) { showError(e.message); }
   }
   document.getElementById("livre-search-btn").addEventListener("click", () => {
     livreQ = document.getElementById("livre-search").value.trim();
     livreAuteur = document.getElementById("livre-auteur").value.trim();
+    livreDispo = document.getElementById("livre-dispo").value;
+    livrePage = 1;
+    loadLivres();
+  });
+  document.getElementById("livre-dispo").addEventListener("change", () => {
+    livreDispo = document.getElementById("livre-dispo").value;
     livrePage = 1;
     loadLivres();
   });
   document.getElementById("livre-clear").addEventListener("click", () => {
     document.getElementById("livre-search").value = "";
     document.getElementById("livre-auteur").value = "";
-    livreQ = ""; livreAuteur = ""; livrePage = 1;
+    document.getElementById("livre-dispo").value = "";
+    livreQ = ""; livreAuteur = ""; livreDispo = ""; livrePage = 1;
     loadLivres();
   });
   document.getElementById("livres-prev").addEventListener("click", () => { livrePage--; loadLivres(); });
@@ -185,6 +193,27 @@
     } catch (e) { showError(e.message); }
   }
   document.getElementById("emprunt-filtre").addEventListener("change", loadEmprunts);
+
+  /* ---------- Export CSV des retards (bonus) ---------- */
+  document.getElementById("btn-export-csv").addEventListener("click", async () => {
+    try {
+      const data = await api("/api/emprunts?statut=en_retard");
+      if (!data.length) { showError("Aucun emprunt en retard à exporter."); return; }
+      const rows = [["Livre", "Auteur", "Adherent", "Date emprunt", "Retour prevu"]];
+      data.forEach((x) => rows.push([
+        x.livre_titre, x.auteur_nom, x.adherent_nom,
+        new Date(x.date_emprunt).toLocaleDateString("fr-FR"),
+        new Date(x.date_retour_prevue).toLocaleDateString("fr-FR"),
+      ]));
+      const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "emprunts-en-retard.csv";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { showError(e.message); }
+  });
 
   // Expose pour les étapes suivantes (formulaires J2/J3)
   window.Biblio = { api, showError, loadLivres, loadAuteurs, loadAdherents, loadEmprunts, loadDashboard, esc };
