@@ -64,6 +64,11 @@
         <div class="toolbar">
           <input class="field" id="livre-search" placeholder="Rechercher par titre...">
           <input class="field" id="livre-auteur" placeholder="Filtrer par auteur...">
+          <select class="field" id="livre-dispo" style="max-width:160px; flex:0;">
+            <option value="">Tous statuts</option>
+            <option value="true">Disponibles</option>
+            <option value="false">Empruntés</option>
+          </select>
           <button class="btn" id="livre-search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
           <button class="btn" id="livre-clear" hidden>Effacer</button>
         </div>
