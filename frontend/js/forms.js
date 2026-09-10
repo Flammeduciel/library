@@ -38,7 +38,7 @@
         const nationalite = document.getElementById("f-auteur-nat").value.trim() || null;
         if (!nom) return formError("Le nom est obligatoire.");
         await api("/api/auteurs", { method: "POST", body: JSON.stringify({ nom, nationalite }) });
-        backdrop.classList.remove("open");
+        toast("Enregistré !"); backdrop.classList.remove("open");
         loadAuteurs();
       } catch (e) { formError(e.message); }
     });
@@ -62,7 +62,7 @@
             const nationalite = document.getElementById("f-auteur-nat").value.trim() || null;
             if (!nom) return formError("Le nom est obligatoire.");
             await api(`/api/auteurs/${a.id}`, { method: "PUT", body: JSON.stringify({ nom, nationalite }) });
-            backdrop.classList.remove("open");
+            toast("Enregistré !"); backdrop.classList.remove("open");
             loadAuteurs();
           } catch (err) { formError(err.message); }
         });
@@ -93,7 +93,7 @@
         const email = document.getElementById("f-adh-email").value.trim() || null;
         if (!nom) return formError("Le nom est obligatoire.");
         await api("/api/adherents", { method: "POST", body: JSON.stringify({ nom, telephone, email }) });
-        backdrop.classList.remove("open");
+        toast("Enregistré !"); backdrop.classList.remove("open");
         loadAdherents();
       } catch (e) { formError(e.message); }
     });
@@ -119,7 +119,7 @@
             const email = document.getElementById("f-adh-email").value.trim() || null;
             if (!nom) return formError("Le nom est obligatoire.");
             await api(`/api/adherents/${a.id}`, { method: "PUT", body: JSON.stringify({ nom, telephone, email }) });
-            backdrop.classList.remove("open");
+            toast("Enregistré !"); backdrop.classList.remove("open");
             loadAdherents();
           } catch (err) { formError(err.message); }
         });
@@ -158,7 +158,7 @@
           if (!titre) return formError("Le titre est obligatoire.");
           if (!auteur_id) return formError("L'auteur est obligatoire.");
           await api("/api/livres", { method: "POST", body: JSON.stringify({ titre, auteur_id, annee_publication: annee || null }) });
-          backdrop.classList.remove("open");
+          toast("Enregistré !"); backdrop.classList.remove("open");
           loadLivres();
         } catch (e) { formError(e.message); }
       });
@@ -186,7 +186,7 @@
             const annee = document.getElementById("f-livre-annee").value;
             if (!titre) return formError("Le titre est obligatoire.");
             await api(`/api/livres/${l.id}`, { method: "PUT", body: JSON.stringify({ titre, auteur_id, annee_publication: annee || null }) });
-            backdrop.classList.remove("open");
+            toast("Enregistré !"); backdrop.classList.remove("open");
             loadLivres();
           } catch (err) { formError(err.message); }
         });
@@ -221,7 +221,7 @@
           if (!adherent_id || !livre_id) return formError("Adhérent et livre obligatoires.");
           if (!date_retour_prevue) return formError("La date de retour prévue est obligatoire.");
           await api("/api/emprunts", { method: "POST", body: JSON.stringify({ adherent_id, livre_id, date_retour_prevue }) });
-          backdrop.classList.remove("open");
+          toast("Enregistré !"); backdrop.classList.remove("open");
           loadEmprunts();
           loadLivres();
         } catch (e) { formError(e.message); }

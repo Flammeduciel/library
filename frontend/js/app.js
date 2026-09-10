@@ -164,7 +164,10 @@
     try {
       const filtre = document.getElementById("emprunt-filtre").value;
       const data = await api("/api/emprunts" + (filtre ? `?statut=${filtre}` : ""));
-      document.getElementById("emprunts-total").textContent = `${data.length} affiché(s)`;
+      const nbRetard = data.filter((x) => !x.date_retour_effective && new Date(x.date_retour_prevue) < new Date()).length;
+      document.getElementById("emprunts-total").textContent = nbRetard
+        ? `${data.length} affiché(s) — ${nbRetard} en retard`
+        : `${data.length} affiché(s)`;
       document.getElementById("emprunts-body").innerHTML = data.length ? data.map((x) => {
         const enRetard = !x.date_retour_effective && new Date(x.date_retour_prevue) < new Date();
         const statut = x.date_retour_effective
