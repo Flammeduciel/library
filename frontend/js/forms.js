@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const { api, showError, loadAuteurs, loadAdherents, esc } = window.Biblio;
+  const { api, showError, loadAuteurs, loadAdherents, loadLivres, loadEmprunts, esc } = window.Biblio;
 
   const backdrop = document.getElementById("modal-backdrop");
   const title = document.getElementById("modal-title");
@@ -132,5 +132,111 @@
         loadAdherents();
       } catch (err) { showError(err.message); }
     }
+  });
+
+  /* ---------- Livre : ajout / modification ---------- */
+  async function auteurOptions(selected = "") {
+    const list = await api("/api/auteurs");
+    return list.map((a) => `<option value="${a.id}" ${String(a.id) === String(selected) ? "selected" : ""}>${esc(a.nom)}</option>`).join("");
+  }
+
+  document.getElementById("btn-add-livre").addEventListener("click", async () => {
+    try {
+      const opts = await auteurOptions();
+      openModal("Ajouter un livre", `
+        <div class="alert danger" hidden></div>
+        <label>Titre<input class="field" id="f-livre-titre" placeholder="Ex. So Long a Letter"></label>
+        <label>Auteur<select class="field" id="f-livre-auteur">${opts}</select></label>
+        <label>Année de publication<input class="field" id="f-livre-annee" type="number" placeholder="Ex. 1979"></label>
+        <button class="btn accent" id="f-livre-save">Enregistrer</button>
+      `);
+      document.getElementById("f-livre-save").addEventListener("click", async () => {
+        try {
+          const titre = document.getElementById("f-livre-titre").value.trim();
+          const auteur_id = document.getElementById("f-livre-auteur").value;
+          const annee = document.getElementById("f-livre-annee").value;
+          if (!titre) return formError("Le titre est obligatoire.");
+          if (!auteur_id) return formError("L'auteur est obligatoire.");
+          await api("/api/livres", { method: "POST", body: JSON.stringify({ titre, auteur_id, annee_publication: annee || null }) });
+          backdrop.classList.remove("open");
+          loadLivres();
+        } catch (e) { formError(e.message); }
+      });
+    } catch (e) { showError(e.message); }
+  });
+
+  document.getElementById("livres-body").addEventListener("click", async (e) => {
+    const editBtn = e.target.closest("[data-edit-livre]");
+    const delBtn = e.target.closest("[data-del-livre]");
+    if (editBtn) {
+      try {
+        const l = await api(`/api/livres/${editBtn.dataset.editLivre}`);
+        const opts = await auteurOptions(l.auteur_id);
+        openModal("Modifier un livre", `
+          <div class="alert danger" hidden></div>
+          <label>Titre<input class="field" id="f-livre-titre" value="${esc(l.titre)}"></label>
+          <label>Auteur<select class="field" id="f-livre-auteur">${opts}</select></label>
+          <label>Année de publication<input class="field" id="f-livre-annee" type="number" value="${esc(l.annee_publication)}"></label>
+          <button class="btn accent" id="f-livre-save">Enregistrer</button>
+        `);
+        document.getElementById("f-livre-save").addEventListener("click", async () => {
+          try {
+            const titre = document.getElementById("f-livre-titre").value.trim();
+            const auteur_id = document.getElementById("f-livre-auteur").value;
+            const annee = document.getElementById("f-livre-annee").value;
+            if (!titre) return formError("Le titre est obligatoire.");
+            await api(`/api/livres/${l.id}`, { method: "PUT", body: JSON.stringify({ titre, auteur_id, annee_publication: annee || null }) });
+            backdrop.classList.remove("open");
+            loadLivres();
+          } catch (err) { formError(err.message); }
+        });
+      } catch (err) { showError(err.message); }
+    }
+    if (delBtn) {
+      if (!confirm("Supprimer ce livre ?")) return;
+      try {
+        await api(`/api/livres/${delBtn.dataset.delLivre}`, { method: "DELETE" });
+        loadLivres();
+      } catch (err) { showError(err.message); }
+    }
+  });
+
+  /* ---------- Emprunt : nouvel emprunt + retour ---------- */
+  document.getElementById("btn-add-emprunt").addEventListener("click", async () => {
+    try {
+      const [adherents, livresData] = await Promise.all([api("/api/adherents"), api("/api/livres?limit=100")]);
+      const dispo = livresData.livres.filter((l) => l.disponible);
+      openModal("Nouvel emprunt", `
+        <div class="alert danger" hidden></div>
+        <label>Adhérent<select class="field" id="f-emp-adh">${adherents.map((a) => `<option value="${a.id}">${esc(a.nom)}</option>`).join("")}</select></label>
+        <label>Livre<select class="field" id="f-emp-livre">${dispo.length ? dispo.map((l) => `<option value="${l.id}">${esc(l.titre)} — ${esc(l.auteur_nom)}</option>`).join("") : `<option value="">Aucun livre disponible</option>`}</select></label>
+        <label>Date de retour prévue<input class="field" id="f-emp-date" type="date"></label>
+        <button class="btn accent" id="f-emp-save">Enregistrer l'emprunt</button>
+      `);
+      document.getElementById("f-emp-save").addEventListener("click", async () => {
+        try {
+          const adherent_id = document.getElementById("f-emp-adh").value;
+          const livre_id = document.getElementById("f-emp-livre").value;
+          const date_retour_prevue = document.getElementById("f-emp-date").value;
+          if (!adherent_id || !livre_id) return formError("Adhérent et livre obligatoires.");
+          if (!date_retour_prevue) return formError("La date de retour prévue est obligatoire.");
+          await api("/api/emprunts", { method: "POST", body: JSON.stringify({ adherent_id, livre_id, date_retour_prevue }) });
+          backdrop.classList.remove("open");
+          loadEmprunts();
+          loadLivres();
+        } catch (e) { formError(e.message); }
+      });
+    } catch (e) { showError(e.message); }
+  });
+
+  document.getElementById("emprunts-body").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-retour]");
+    if (!btn) return;
+    if (!confirm("Confirmer le retour de ce livre ?")) return;
+    try {
+      await api(`/api/emprunts/${btn.dataset.retour}/retour`, { method: "PUT" });
+      loadEmprunts();
+      loadLivres();
+    } catch (err) { showError(err.message); }
   });
 })();
