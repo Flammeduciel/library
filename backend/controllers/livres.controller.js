@@ -2,7 +2,7 @@ const pool = require('../db');
 
 exports.getAll = async (req, res) => {
   try {
-    const { q, auteur, page = 1, limit = 10 } = req.query;
+    const { q, auteur, disponible, page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
     let query = `
       SELECT l.*, a.nom AS auteur_nom
@@ -19,6 +19,10 @@ exports.getAll = async (req, res) => {
     if (auteur) {
       params.push(`%${auteur}%`);
       conditions.push(`a.nom ILIKE $${params.length}`);
+    }
+    if (disponible === 'true' || disponible === 'false') {
+      params.push(disponible === 'true');
+      conditions.push(`l.disponible = $${params.length}`);
     }
 
     if (conditions.length > 0) {
