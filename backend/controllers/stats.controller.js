@@ -1,9 +1,10 @@
 const pool = require('../db');
+const response = require('../utils/response');
 
 exports.getStats = async (req, res) => {
   try {
     const totalLivres = await pool.query('SELECT COUNT(*) FROM livres');
-    const totalAdherents = await pool.query('SELECT COUNT(*) FROM adherents');
+    const totalAdherents = await pool.query("SELECT COUNT(*) FROM users WHERE role = 'adherent'");
     const empruntsEnCours = await pool.query(
       'SELECT COUNT(*) FROM emprunts WHERE date_retour_effective IS NULL'
     );
@@ -21,23 +22,24 @@ exports.getStats = async (req, res) => {
     );
 
     const adherentPlusActif = await pool.query(
-      `SELECT ad.nom, COUNT(e.id) AS nombre_emprunts
-       FROM adherents ad
-       JOIN emprunts e ON ad.id = e.adherent_id
-       GROUP BY ad.id, ad.nom
+      `SELECT u.nom, COUNT(e.id) AS nombre_emprunts
+       FROM users u
+       JOIN emprunts e ON u.id = e.user_id
+       WHERE u.role = 'adherent'
+       GROUP BY u.id, u.nom
        ORDER BY nombre_emprunts DESC
        LIMIT 1`
     );
 
-    res.json({
+    response.success(res, {
       total_livres: parseInt(totalLivres.rows[0].count),
       total_adherents: parseInt(totalAdherents.rows[0].count),
       emprunts_en_cours: parseInt(empruntsEnCours.rows[0].count),
       emprunts_en_retard: parseInt(empruntsEnRetard.rows[0].count),
       livre_plus_emprunte: livrePlusEmprunte.rows[0] || null,
       adherent_plus_actif: adherentPlusActif.rows[0] || null,
-    });
+    }, 'Statistiques de la bibliotheque');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };
