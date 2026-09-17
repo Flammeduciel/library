@@ -1,4 +1,5 @@
 const pool = require('../db');
+const response = require('../utils/response');
 
 exports.getAll = async (req, res) => {
   try {
@@ -39,7 +40,7 @@ exports.getAll = async (req, res) => {
 
     const result = await pool.query(query, params);
 
-    res.json({
+    response.success(res, {
       livres: result.rows,
       pagination: {
         page: parseInt(page),
@@ -47,9 +48,9 @@ exports.getAll = async (req, res) => {
         total,
         pages: Math.ceil(total / limit),
       },
-    });
+    }, 'Liste des livres');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };
 
@@ -63,28 +64,28 @@ exports.getById = async (req, res) => {
        WHERE l.id = $1`,
       [id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Livre non trouve' });
-    res.json(result.rows[0]);
+    if (result.rows.length === 0) return response.notFound(res, 'Livre non trouve');
+    response.success(res, result.rows[0], 'Livre recupere');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };
 
 exports.create = async (req, res) => {
   try {
     const { titre, auteur_id, annee_publication } = req.body;
-    if (!titre || !auteur_id) return res.status(400).json({ error: 'Le titre et l\'auteur sont obligatoires' });
+    if (!titre || !auteur_id) return response.badRequest(res, 'Le titre et l\'auteur sont obligatoires');
 
     const auteurCheck = await pool.query('SELECT id FROM auteurs WHERE id = $1', [auteur_id]);
-    if (auteurCheck.rows.length === 0) return res.status(400).json({ error: 'Auteur inexistant' });
+    if (auteurCheck.rows.length === 0) return response.badRequest(res, 'Auteur inexistant');
 
     const result = await pool.query(
       'INSERT INTO livres (titre, auteur_id, annee_publication) VALUES ($1, $2, $3) RETURNING *',
       [titre, auteur_id, annee_publication || null]
     );
-    res.status(201).json(result.rows[0]);
+    response.created(res, result.rows[0], 'Livre cree');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };
 
@@ -92,16 +93,16 @@ exports.update = async (req, res) => {
   try {
     const { id } = req.params;
     const { titre, auteur_id, annee_publication } = req.body;
-    if (!titre || !auteur_id) return res.status(400).json({ error: 'Le titre et l\'auteur sont obligatoires' });
+    if (!titre || !auteur_id) return response.badRequest(res, 'Le titre et l\'auteur sont obligatoires');
 
     const result = await pool.query(
       'UPDATE livres SET titre = $1, auteur_id = $2, annee_publication = $3 WHERE id = $4 RETURNING *',
       [titre, auteur_id, annee_publication || null, id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Livre non trouve' });
-    res.json(result.rows[0]);
+    if (result.rows.length === 0) return response.notFound(res, 'Livre non trouve');
+    response.success(res, result.rows[0], 'Livre modifie');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };
 
@@ -109,9 +110,9 @@ exports.remove = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query('DELETE FROM livres WHERE id = $1 RETURNING *', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Livre non trouve' });
-    res.json({ message: 'Livre supprime' });
+    if (result.rows.length === 0) return response.notFound(res, 'Livre non trouve');
+    response.success(res, { id: +id }, 'Livre supprime');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };

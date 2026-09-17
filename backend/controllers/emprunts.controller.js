@@ -1,63 +1,74 @@
 const pool = require('../db');
+const response = require('../utils/response');
+const { ROLES } = require('../middlewares/auth');
 
 exports.getAll = async (req, res) => {
   try {
     const { statut } = req.query;
     let query = `
       SELECT e.*, l.titre AS livre_titre, l.disponible,
-             a.nom AS auteur_nom, ad.nom AS adherent_nom
+             a.nom AS auteur_nom, u.nom AS user_nom, u.role AS user_role
       FROM emprunts e
       JOIN livres l ON e.livre_id = l.id
       JOIN auteurs a ON l.auteur_id = a.id
-      JOIN adherents ad ON e.adherent_id = ad.id
+      JOIN users u ON e.user_id = u.id
     `;
+    const params = [];
+    const conditions = [];
 
-    if (statut === 'en_cours') {
-      query += ' WHERE e.date_retour_effective IS NULL';
-    } else if (statut === 'en_retard') {
-      query += ' WHERE e.date_retour_effective IS NULL AND e.date_retour_prevue < NOW()';
+    if (req.user.role === ROLES.ADHERENT) {
+      params.push(req.user.id);
+      conditions.push(`e.user_id = $${params.length}`);
     }
 
+    if (statut === 'en_cours') {
+      conditions.push('e.date_retour_effective IS NULL');
+    } else if (statut === 'en_retard') {
+      conditions.push('e.date_retour_effective IS NULL AND e.date_retour_prevue < NOW()');
+    }
+
+    if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
     query += ' ORDER BY e.date_emprunt DESC';
 
-    const result = await pool.query(query);
-    res.json(result.rows);
+    const result = await pool.query(query, params);
+    response.success(res, result.rows, 'Liste des emprunts');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };
 
 exports.create = async (req, res) => {
   try {
-    const { adherent_id, livre_id, date_retour_prevue } = req.body;
+    const { user_id, livre_id, date_retour_prevue } = req.body;
 
-    if (!adherent_id || !livre_id || !date_retour_prevue) {
-      return res.status(400).json({ error: 'adherent_id, livre_id et date_retour_prevue sont obligatoires' });
+    if (!user_id || !livre_id || !date_retour_prevue) {
+      return response.badRequest(res, 'user_id, livre_id et date_retour_prevue sont obligatoires');
     }
 
-    const adherentCheck = await pool.query('SELECT id FROM adherents WHERE id = $1', [adherent_id]);
-    if (adherentCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Adherent inexistant' });
+    // un adherent ne peut emprunter que pour lui-meme
+    if (req.user.role === ROLES.ADHERENT && req.user.id !== +user_id) {
+      return response.forbidden(res, 'Un adherent ne peut emprunter que pour lui-meme');
     }
+
+    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [user_id]);
+    if (userCheck.rows.length === 0) return response.badRequest(res, 'Utilisateur inexistant');
 
     const livreCheck = await pool.query('SELECT id, disponible FROM livres WHERE id = $1', [livre_id]);
-    if (livreCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Livre inexistant' });
-    }
+    if (livreCheck.rows.length === 0) return response.badRequest(res, 'Livre inexistant');
     if (!livreCheck.rows[0].disponible) {
-      return res.status(400).json({ error: 'Ce livre est deja emprunte et indisponible' });
+      return response.badRequest(res, 'Ce livre est deja emprunte et indisponible');
     }
 
     const emprunt = await pool.query(
-      'INSERT INTO emprunts (adherent_id, livre_id, date_retour_prevue) VALUES ($1, $2, $3) RETURNING *',
-      [adherent_id, livre_id, date_retour_prevue]
+      'INSERT INTO emprunts (user_id, livre_id, date_retour_prevue) VALUES ($1, $2, $3) RETURNING *',
+      [user_id, livre_id, date_retour_prevue]
     );
 
     await pool.query('UPDATE livres SET disponible = FALSE WHERE id = $1', [livre_id]);
 
-    res.status(201).json(emprunt.rows[0]);
+    response.created(res, emprunt.rows[0], 'Emprunt cree, livre marque indisponible');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };
 
@@ -69,11 +80,14 @@ exports.retour = async (req, res) => {
       'SELECT * FROM emprunts WHERE id = $1',
       [id]
     );
-    if (empruntCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Emprunt non trouve' });
-    }
+    if (empruntCheck.rows.length === 0) return response.notFound(res, 'Emprunt non trouve');
     if (empruntCheck.rows[0].date_retour_effective) {
-      return res.status(400).json({ error: 'Ce livre a deja ete rendu' });
+      return response.badRequest(res, 'Ce livre a deja ete rendu');
+    }
+
+    // un adherent ne peut rendre que ses propres emprunts
+    if (req.user.role === ROLES.ADHERENT && req.user.id !== empruntCheck.rows[0].user_id) {
+      return response.forbidden(res, 'Vous ne pouvez rendre que vos propres emprunts');
     }
 
     const result = await pool.query(
@@ -83,8 +97,8 @@ exports.retour = async (req, res) => {
 
     await pool.query('UPDATE livres SET disponible = TRUE WHERE id = $1', [empruntCheck.rows[0].livre_id]);
 
-    res.json(result.rows[0]);
+    response.success(res, result.rows[0], 'Retour enregistre, livre remis a disposition');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.failure(res, err.message, 500);
   }
 };

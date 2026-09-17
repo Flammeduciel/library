@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tableau de bord — BiblioQuartier</title>
+<title>Livres — BiblioQuartier</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body data-page="dashboard">
+<body data-page="livres">
 
 <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu"><i class="fa-solid fa-bars"></i></button>
 <div class="backdrop" id="backdrop"></div>
@@ -43,27 +43,51 @@
       <div class="alert danger" id="global-error" hidden></div>
 
       <div class="page-head">
-        <div><h1>Tableau de bord</h1><p id="dash-updated">Chargement...</p></div>
-        <button class="btn" id="dash-refresh"><i class="fa-solid fa-rotate"></i> Actualiser</button>
+        <div><h1>Livres</h1><p>Recherche par titre ou auteur, avec pagination.</p></div>
+        <button class="btn accent" id="btn-add-livre"><i class="fa-solid fa-plus"></i> Ajouter un livre</button>
       </div>
-      <div class="kpis">
-        <div class="kpi"><div class="top"><span class="label">Livres</span><i class="fa-solid fa-book"></i></div><span class="value" id="kpi-livres">—</span><span class="foot">au catalogue</span></div>
-        <div class="kpi"><div class="top"><span class="label">Adhérents</span><i class="fa-solid fa-users"></i></div><span class="value" id="kpi-adherents">—</span><span class="foot">inscrits</span></div>
-        <div class="kpi"><div class="top"><span class="label">En cours</span><i class="fa-solid fa-arrow-right-arrow-left"></i></div><span class="value" id="kpi-encours">—</span><span class="foot">emprunts actifs</span></div>
-        <div class="kpi"><div class="top"><span class="label">En retard</span><i class="fa-solid fa-triangle-exclamation"></i></div><span class="value" id="kpi-retard">—</span><span class="foot">à relancer</span></div>
+      <div class="toolbar">
+        <input class="field" id="livre-search" placeholder="Rechercher par titre...">
+        <input class="field" id="livre-auteur" placeholder="Filtrer par auteur...">
+        <select class="field" id="livre-dispo" style="max-width:160px; flex:0;">
+          <option value="">Tous statuts</option>
+          <option value="true">Disponibles</option>
+          <option value="false">Empruntés</option>
+        </select>
+        <button class="btn" id="livre-search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button class="btn" id="livre-clear" hidden>Effacer</button>
       </div>
-      <div class="grid2">
-        <div class="panel"><div class="panel-head"><h2>Livre le plus emprunté</h2></div><div class="panel-body" id="top-livre">—</div></div>
-        <div class="panel"><div class="panel-head"><h2>Adhérent le plus actif</h2></div><div class="panel-body" id="top-adherent">—</div></div>
+      <div class="panel">
+        <div class="panel-head"><h2>Catalogue</h2><span class="hint" id="livres-total">—</span></div>
+        <div class="panel-body table-wrap">
+          <table>
+            <thead><tr><th>Titre</th><th>Auteur</th><th class="num">Année</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="livres-body"></tbody>
+          </table>
+        </div>
+        <div class="panel-body" style="padding-top:0">
+          <div class="pagination">
+            <button class="btn" id="livres-prev"><i class="fa-solid fa-chevron-left"></i> Précédent</button>
+            <span class="info" id="livres-page-info">Page 1 / 1</span>
+            <button class="btn" id="livres-next">Suivant <i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
       </div>
 
     </div>
   </div>
 </div>
 
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head"><h2 id="modal-title">Formulaire</h2><button class="icon-btn" id="modal-close"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
 <script src="js/config.js"></script>
 <script src="js/common.js"></script>
 <script src="js/toast.js"></script>
-<script src="js/dashboard.js"></script>
+<script src="js/livres.js"></script>
 </body>
 </html>
