@@ -15,7 +15,7 @@
   const requiredRole = document.body.dataset.roleRequired;
   if (page) {
     if (!token || !currentUser) {
-      location.replace("/login.html");
+      location.replace("/pages/login.html");
     } else if (requiredRole && currentUser.role !== requiredRole) {
       location.replace("/index.html");
     }
@@ -35,7 +35,7 @@
     currentUser = null;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    location.href = "/login.html";
+    location.href = "/pages/login.html";
   }
 
   const logoutBtn = document.getElementById("logout");
