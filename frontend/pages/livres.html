@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Emprunts — BiblioQuartier</title>
+<title>Livres — BiblioQuartier</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="../assets/css/style.css">
 </head>
-<body data-page="emprunts">
+<body data-page="livres">
 
 <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu"><i class="fa-solid fa-bars"></i></button>
 <div class="backdrop" id="backdrop"></div>
@@ -23,7 +23,7 @@
     </div>
 
     <div class="nav" id="nav">
-      <a class="nav-item" href="index.html" data-page="dashboard"><i class="fa-solid fa-gauge-high"></i>Tableau de bord</a>
+      <a class="nav-item" href="../index.html" data-page="dashboard"><i class="fa-solid fa-gauge-high"></i>Tableau de bord</a>
       <a class="nav-item" href="livres.html" data-page="livres"><i class="fa-solid fa-book"></i>Livres</a>
       <a class="nav-item" href="auteurs.html" data-page="auteurs"><i class="fa-solid fa-pen-nib"></i>Auteurs</a>
       <a class="nav-item" id="nav-adherents" href="adherents.html" data-page="adherents"><i class="fa-solid fa-users"></i>Adhérents</a>
@@ -43,24 +43,34 @@
       <div class="alert danger" id="global-error" hidden></div>
 
       <div class="page-head">
-        <div><h1>Emprunts</h1><p>En cours et en retard — les retards sont surlignés.</p></div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <select class="field" id="emprunt-filtre">
-            <option value="">Tous</option>
-            <option value="en_cours">En cours</option>
-            <option value="en_retard">En retard</option>
-          </select>
-          <button class="btn" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> Export CSV retards</button>
-          <button class="btn accent" id="btn-add-emprunt"><i class="fa-solid fa-plus"></i> Nouvel emprunt</button>
-        </div>
+        <div><h1>Livres</h1><p>Recherche par titre ou auteur, avec pagination.</p></div>
+        <button class="btn accent" id="btn-add-livre"><i class="fa-solid fa-plus"></i> Ajouter un livre</button>
+      </div>
+      <div class="toolbar">
+        <input class="field" id="livre-search" placeholder="Rechercher par titre...">
+        <input class="field" id="livre-auteur" placeholder="Filtrer par auteur...">
+        <select class="field" id="livre-dispo" style="max-width:160px; flex:0;">
+          <option value="">Tous statuts</option>
+          <option value="true">Disponibles</option>
+          <option value="false">Empruntés</option>
+        </select>
+        <button class="btn" id="livre-search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button class="btn" id="livre-clear" hidden>Effacer</button>
       </div>
       <div class="panel">
-        <div class="panel-head"><h2>Emprunts</h2><span class="hint" id="emprunts-total">—</span></div>
+        <div class="panel-head"><h2>Catalogue</h2><span class="hint" id="livres-total">—</span></div>
         <div class="panel-body table-wrap">
           <table>
-            <thead><tr><th>Livre</th><th>Adhérent</th><th>Retour prévu</th><th>Statut</th><th></th></tr></thead>
-            <tbody id="emprunts-body"></tbody>
+            <thead><tr><th>Titre</th><th>Auteur</th><th class="num">Année</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="livres-body"></tbody>
           </table>
+        </div>
+        <div class="panel-body" style="padding-top:0">
+          <div class="pagination">
+            <button class="btn" id="livres-prev"><i class="fa-solid fa-chevron-left"></i> Précédent</button>
+            <span class="info" id="livres-page-info">Page 1 / 1</span>
+            <button class="btn" id="livres-next">Suivant <i class="fa-solid fa-chevron-right"></i></button>
+          </div>
         </div>
       </div>
 
@@ -75,9 +85,9 @@
   </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/common.js"></script>
-<script src="js/toast.js"></script>
-<script src="js/emprunts.js"></script>
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/common.js"></script>
+<script src="../assets/js/toast.js"></script>
+<script src="../assets/js/livres.js"></script>
 </body>
 </html>

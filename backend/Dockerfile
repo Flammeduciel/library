@@ -1,7 +1,9 @@
-# Contexte de build = RACINE du dépôt (Build Path: . dans Dokploy), pas le
-# dossier backend/ : le package npm de l'API vit à la racine du dépôt
-# (package.json racine). Le COPY référence donc les chemins depuis la racine
-# (backend/, db/, package.json...).
+# Contexte de build = dossier backend/ lui-même (Build Path: backend dans
+# Dokploy). Tout ce dont l'image a besoin vit dans backend/ : son propre
+# package.json (mêmes dépendances que celui de la racine), les schémas de
+# production dans backend/db/, server.js et tous les dossiers de code.
+# Le COPY est donc relatif au contexte backend/, aucun fichier hors
+# de ce dossier n'est requis.
 FROM node:22-alpine AS base
 
 FROM base AS deps
@@ -14,21 +16,19 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # postgresql-client fournit psql, utilisé par start.sh pour appliquer
-# db/schema_prod.sql au démarrage (équivalent de `prisma migrate deploy`).
+# backend/db/schema_prod.sql au démarrage (équivalent de `prisma migrate deploy`).
 RUN apk add --no-cache postgresql-client \
   && addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 backend
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json ./package.json
-COPY backend ./backend
-COPY db ./db
+COPY . .
 
-RUN chmod +x ./backend/scripts/start.sh && chown -R backend:nodejs /app
+RUN chmod +x ./scripts/start.sh && chown -R backend:nodejs /app
 
 USER backend
 
 ENV PORT=4000
 EXPOSE 4000
 
-CMD ["./backend/scripts/start.sh"]
+CMD ["sh", "./scripts/start.sh"]
