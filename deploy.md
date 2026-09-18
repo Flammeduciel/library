@@ -76,7 +76,7 @@ Créer une nouvelle **Application** dans Dokploy :
 | `JWT_SECRET`    | Oui    | Une chaîne aléatoire longue et secrète — jamais la valeur par défaut de développement          |
 | `CORS_ORIGIN`   | Oui    | L'URL publique du frontend, **https, sans slash final** — ex. `https://biblio.exemple.com`     |
 | `PORT`          | Non    | `4000` (déjà la valeur par défaut du Dockerfile)                                              |
-| `SEED_ON_START` | Non    | `false` (défaut). À passer à `true` une seule fois pour créer les comptes staff — voir plus bas |
+| `SEED_ON_START` | Non    | `false` (défaut). À passer brièvement à `true` pour **réinitialiser la base** et charger le seed de démonstration complet — voir plus bas. ⚠️ détruit les données existantes |
 
 Au démarrage du conteneur, `backend/scripts/start.sh` exécute
 `backend/db/schema_prod.sql` — un schéma **idempotent** (comme le sont les
@@ -128,25 +128,41 @@ sur l'application **backend** et vérifie que `CORS_ORIGIN` inclut bien ce
 domaine exact (avec `https://`, sans slash final, sans autre chemin) — sinon
 toutes les requêtes API échoueront en CORS côté navigateur.
 
-## Créer le premier compte administrateur en production
+## Créer les données de démonstration en production (recette/test)
 
-Le seed de démonstration complet (`db/seed.sql`) est en local uniquement et
-**ne s'exécute jamais automatiquement**. Pour obtenir les premiers comptes
-en production :
+Le seed complet n'est pas exécuté automatiquement par défaut : `SEED_ON_START`
+est là pour le charger **une seule fois**, sur un environnement de test/recette
+uniquement (jamais sur une prod avec des données réelles).
 
-1. Déployer le backend avec **`SEED_ON_START=true`** une seule fois (ou
-   augmenter uniquement sur un redémarrage). `start.sh` applique alors
-   `backend/db/seed_prod.sql` (idempotent `ON CONFLICT DO NOTHING`) qui crée les
-   comptes staff :
-   - `admin@biblio.fr` / `superadmin123` (superadmin)
-   - `biblio@biblio.fr` / `biblio123` (bibliothecaire)
+> ⚠️ **`SEED_ON_START=true` est destructif** : `start.sh` exécute d'abord
+> `TRUNCATE emprunts, livres, auteurs, users RESTART IDENTITY CASCADE`, donc
+> **toutes les données existantes sont supprimées**, puis charge
+> `backend/db/seed_demo.sql`.
+
+1. Déployer le backend avec **`SEED_ON_START=true`** : au démarrage,
+   `start.sh` applique le schéma puis vide les tables et charge le jeu de
+   démonstration complet :
+   - 2 comptes staff : `admin@biblio.fr` / `superadmin123` (superadmin),
+     `biblio@biblio.fr` / `biblio123` (bibliothecaire)
+   - 12 adhérents congolais (mot de passe commun `adherent123`)
+   - 14 auteurs français réels et 46 livres, avec un historique d'emprunts
+     d'environ deux semaines (retournés, en cours, en retard)
 2. **Remettre `SEED_ON_START=false`** (ou retirer la variable) et redéployer.
-3. **Changer immédiatement ces deux mots de passe** (ils sont publics dans ce
-   dépôt) : se connecter avec le compte puis — aucun endpoint de changement
+3. **Changer immédiatement les mots de passe du seed** (ils sont publics dans
+   ce dépôt) : se connecter avec un compte puis — aucun endpoint de changement
    de mot de passe n'étant exposé — exécuter un `UPDATE users SET password =
    '<hash bcrypt>' WHERE email = '...'` depuis le terminal PostgreSQL de
    Dokploy (hash généré avec `bcryptjs`), ou recréer les comptes via
    `utilisateurs.html` (superadmin) et supprimer ceux du seed.
+
+Pour **seulement créer les 2 comptes staff** sans données de démonstration,
+exécuter `backend/db/seed_prod.sql` (idempotent `ON CONFLICT DO NOTHING`)
+manuellement depuis le terminal du conteneur :
+
+```sh
+PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" \
+  -d "$DB_NAME" -v ON_ERROR_STOP=1 -f /app/db/seed_prod.sql
+```
 
 ## Vérification post-déploiement
 
@@ -173,7 +189,7 @@ en production :
 | `JWT_SECRET`    | Oui    | une chaîne aléatoire longue                 |
 | `CORS_ORIGIN`   | Oui    | `https://biblio.exemple.com`                |
 | `PORT`          | Non    | `4000` (défaut)                             |
-| `SEED_ON_START` | Non    | `false` (défaut) — `true` une fois pour le seed staff |
+| `SEED_ON_START` | Non    | `false` (défaut) — `true` brièvement pour réinitialiser la base et charger le seed de démonstration complet (⚠️ destructif) |
 
 **Frontend**
 
