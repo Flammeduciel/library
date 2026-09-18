@@ -196,10 +196,13 @@ en production :
   `/docker-entrypoint.d/30-app-config.sh` a besoin d'un *restart* du
   conteneur frontend après ajout/modification de la variable (un rebuild n'est
   pas nécessaire, la valeur est lue au démarrage).
-- **Le build Docker échoue sur `"/package.json": not found`** : le **Build
-  Path** du backend a été perdu (remis à `backend/` au lieu de `.`). Dans un
-  `COPY`, le chemin source est résolu par rapport à la racine du **contexte
-  de build** : le backend a besoin de la racine (package.json). Voir
+- **Le build Docker échoue sur `"/package.json": not found` (souvent suivi de
+  `"/backend": not found` et `"/db": not found`, et d'un « transferring
+  context: 2B » quasi vide dans le log)** : le **Build Path** du backend n'est
+  pas `.` — il est resté à `backend/`. Dans un `COPY`, le chemin source est
+  résolu par rapport à la racine du **contexte de build** : le backend a
+  besoin de la racine (package.json, db/, backend/). Remettre **Build Path à
+  `.`** (Dockerfile path `backend/Dockerfile`) puis redéployer. Voir
   l'encadré de l'étape 2. À l'inverse, le frontend doit avoir Build Path =
   `frontend/`.
 - **`/api/health` répond mais la connexion utilisateur échoue en 500** :
