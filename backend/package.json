@@ -1,0 +1,18 @@
+{
+  "name": "akieni-bibliotheque-backend",
+  "version": "1.0.0",
+  "description": "API Express de la bibliotheque de quartier (image Docker autonome)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.13.0"
+  }
+}

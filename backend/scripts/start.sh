@@ -19,4 +19,4 @@ if [ "$SEED_ON_START" = "true" ]; then
     -f /app/db/seed_prod.sql
 fi
 
-exec node backend/server.js
+exec node server.js

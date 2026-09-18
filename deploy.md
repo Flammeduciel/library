@@ -50,17 +50,19 @@ Créer une nouvelle **Application** dans Dokploy :
 - **Source** : ce dépôt Git, branche `main` (ou `develop` / une branche de
   test)
 - **Build type** : Dockerfile
-- **Build Path** : `.` (racine du dépôt — voir l'encadré ci-dessous)
+- **Build Path** : `backend` (le backend est autonome, tout est dedans)
 - **Dockerfile path** : `backend/Dockerfile`
 - **Port** : `4000`
 - **Health check path** : `/api/health`
 
-> **Pourquoi Build Path = racine** : le package npm de l'API de ce projet vit
-> à la **racine** du dépôt (ce n'est pas un sous-dossier avec son propre
-> `package.json`). Le `Dockerfile` backend fait donc des `COPY` relatifs à la
-> racine (`backend/`, `db/`, `package.json`…). Le contexte de build doit être
-> la racine, pas `backend/`. Le frontend, lui, utilise bien `frontend/` comme
-> Build Path (étape 3).
+> **Le backend est autonome dans `backend/`** : il possède son propre
+> `package.json`+`package-lock.json`, ses deux schémas de production dans
+> `backend/db/`, et le `Dockerfile` fait tout son `COPY` depuis son contexte.
+> Build Path = `backend` (pas la racine du dépôt). Grâce à ça, le contexte de
+> build est exactement le dossier `backend/` — aucun fichier hors du contexte
+> n'est nécessaire, ce qui évite les erreurs `"/db": not found` quand le
+> contexte est vide. Le frontend utilise lui aussi son dossier `frontend/`
+> comme Build Path (étape 3).
 
 **Variables d'environnement** (Environment Settings, pas Build Arguments) :
 
@@ -77,10 +79,10 @@ Créer une nouvelle **Application** dans Dokploy :
 | `SEED_ON_START` | Non    | `false` (défaut). À passer à `true` une seule fois pour créer les comptes staff — voir plus bas |
 
 Au démarrage du conteneur, `backend/scripts/start.sh` exécute
-`db/schema_prod.sql` — un schéma **idempotent** (comme le sont les migrations
-d'un ORM) : les tables sont créées/mises à jour toutes seules au premier
-déploiement, rien à faire à la main, et relancer le conteneur ne casse rien.
-Le schéma de développement `db/schema.sql` est **destructif**
+`backend/db/schema_prod.sql` — un schéma **idempotent** (comme le sont les
+migrations d'un ORM) : les tables sont créées/mises à jour toutes seules au
+premier déploiement, rien à faire à la main, et relancer le conteneur ne casse
+rien. Le schéma de développement `db/schema.sql` est **destructif**
 (`DROP DATABASE`) et ne doit jamais être exécuté en production.
 
 Une fois déployé, attribue un domaine à cette application dans Dokploy (ex.
@@ -134,7 +136,7 @@ en production :
 
 1. Déployer le backend avec **`SEED_ON_START=true`** une seule fois (ou
    augmenter uniquement sur un redémarrage). `start.sh` applique alors
-   `db/seed_prod.sql` (idempotent `ON CONFLICT DO NOTHING`) qui crée les deux
+   `backend/db/seed_prod.sql` (idempotent `ON CONFLICT DO NOTHING`) qui crée les
    comptes staff :
    - `admin@biblio.fr` / `superadmin123` (superadmin)
    - `biblio@biblio.fr` / `biblio123` (bibliothecaire)
@@ -199,22 +201,22 @@ en production :
 - **Le build Docker échoue sur `"/package.json": not found` (souvent suivi de
   `"/backend": not found` et `"/db": not found`, et d'un « transferring
   context: 2B » quasi vide dans le log)** : le **Build Path** du backend n'est
-  pas `.` — il est resté à `backend/`. Dans un `COPY`, le chemin source est
-  résolu par rapport à la racine du **contexte de build** : le backend a
-  besoin de la racine (package.json, db/, backend/). Remettre **Build Path à
-  `.`** (Dockerfile path `backend/Dockerfile`) puis redéployer. Voir
-  l'encadré de l'étape 2. À l'inverse, le frontend doit avoir Build Path =
-  `frontend/`.
+  pas `backend` — il est resté à la racine (`.`) ou ailleurs. Dans un `COPY`,
+  le chemin source est résolu par rapport à la racine du **contexte de build**.
+  Depuis la v2 du Dockerfile, le backend est **autonome** : Build Path =
+  `backend`, Dockerfile path `backend/Dockerfile`, et rien ne manque. Remettre
+  Build Path à `backend` puis redéployer (vider le cache de build si les
+  erreurs persistent). Le frontend garde Build Path = `frontend`.
 - **`/api/health` répond mais la connexion utilisateur échoue en 500** :
   vérifier les logs du conteneur backend — souvent un `JWT_SECRET` vide ou une
   base de données sans schéma (le conteneur backend exécute bien
-  `schema_prod.sql` à chaque boot si psql est présent dans l'image).
+  `backend/db/schema_prod.sql` à chaque boot si psql est présent dans l'image).
 
 ## Tester le build Docker en local (optionnel)
 
 Sans Dokploy, pour vérifier qu'une image se construit correctement :
 
 ```bash
-docker build -f backend/Dockerfile -t akieni-backend .
+docker build -f backend/Dockerfile -t akieni-backend ./backend
 docker build -f frontend/Dockerfile -t akieni-frontend ./frontend
 ```
