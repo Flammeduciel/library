@@ -5,8 +5,9 @@ const pool = require('./db');
 const logger = require('./middlewares/logger');
 const errorHandler = require('./middlewares/errorHandler');
 
+const authRoutes = require('./routes/auth.routes');
+const usersRoutes = require('./routes/users.routes');
 const auteursRoutes = require('./routes/auteurs.routes');
-const adherentsRoutes = require('./routes/adherents.routes');
 const livresRoutes = require('./routes/livres.routes');
 const empruntsRoutes = require('./routes/emprunts.routes');
 const statsRoutes = require('./routes/stats.routes');
@@ -14,7 +15,13 @@ const statsRoutes = require('./routes/stats.routes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS bloqué par défaut en production : n'autoriser que les origines listées
+// dans CORS_ORIGIN (URLs publiques du frontend, https, sans slash final,
+// séparées par des virgules). Vide = autorisation ouverte (pratique en
+// développement local).
+const corsOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+app.use(cors(corsOrigins.length ? { origin: corsOrigins } : undefined));
 app.use(express.json());
 app.use(logger);
 app.use(express.static(require('path').join(__dirname, '..', 'frontend')));
@@ -28,8 +35,9 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/auteurs', auteursRoutes);
-app.use('/api/adherents', adherentsRoutes);
 app.use('/api/livres', livresRoutes);
 app.use('/api/emprunts', empruntsRoutes);
 app.use('/api/stats', statsRoutes);
