@@ -6,8 +6,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY . /usr/share/nginx/html
 
 # L'entrypoint officiel de l'image nginx exécute /docker-entrypoint.d/*.sh au
-# démarrage : on s'en sert pour générer js/config.js à partir de la variable
-# APP_API_URL renseignée dans les Environment Settings de Dokploy.
+# démarrage : on s'en sert pour générer assets/js/config.js à partir de la
+# variable APP_API_URL renseignée dans les Environment Settings de Dokploy.
 COPY docker-entrypoint.d/30-app-config.sh /docker-entrypoint.d/30-app-config.sh
 RUN chmod +x /docker-entrypoint.d/30-app-config.sh
 

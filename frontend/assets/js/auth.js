@@ -25,7 +25,7 @@
 
       localStorage.setItem(TOKEN_KEY, data.data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
-      location.href = "index.html";
+      location.href = "/index.html";
     } catch (err) {
       formError(err.message);
     }

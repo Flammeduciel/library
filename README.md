@@ -21,34 +21,42 @@ Application complète de gestion d'une bibliothèque : catalogue de livres, aute
 
 ## Installation
 
+Le projet npm (dépendances, scripts) vit dans **`backend/`** — c'est aussi le
+dossier de build (Docker) du backend. La racine ne contient ni `package.json`
+ni `node_modules`.
+
 ```bash
 # 1. Cloner le dépôt
 git clone <url-du-depot>
 cd akieni_academy
 
 # 2. Installer les dépendances
+cd backend
 npm install
 
-# 3. Configurer l'environnement
+# 3. Configurer l'environnement (.env et .env.example vivent dans backend/)
 copy .env.example .env
 # puis ajuster DB_USER / DB_PASSWORD si besoin
 # IMPORTANT : changer JWT_SECRET pour un secret de production
 ```
 
 ```bash
-# 4. Créer les tables (le script crée aussi la base `bibliotheque`)
-psql -U postgres -d postgres -f db/schema.sql
+# 4. Créer la base (vide puis recrée si elle existe) et charger les données
+npm run db:reset          # DROP/CREATE bibliotheque + schéma + seed démo
 
-# 5. Charger les données de test (10 utilisateurs, 7 auteurs, 10 livres, 8 emprunts)
-psql -U postgres -d bibliotheque -f db/seed.sql
+#   ou étape par étape :
+npm run db:migrate        # schéma idempotent (backend/db/schema_prod.sql)
+npm run db:seed           # seed de démonstration (backend/db/seed_demo.sql)
 
-# 6. Démarrer le serveur (API + frontend statique)
-npm start
+# 5. Démarrer le serveur (API + frontend statique)
+npm start                 # ou : npm run dev (rechargement auto)
 ```
 
 Ouvrir ensuite **http://localhost:3000**.
 
-> Variables attendues dans `.env` (voir `.env.example`) : `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT`, `JWT_SECRET`, `JWT_EXPIRES_IN`.
+> Variables attendues dans `backend/.env` (voir `backend/.env.example`) :
+> `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT`,
+> `JWT_SECRET`, `JWT_EXPIRES_IN`.
 
 ## Comptes de démo
 
@@ -56,7 +64,7 @@ Ouvrir ensuite **http://localhost:3000**.
 |---|---|---|
 | superadmin | `admin@biblio.fr` | `superadmin123` |
 | bibliothecaire | `biblio@biblio.fr` | `biblio123` |
-| adherent | `aminata.diallo@email.com` | `adherent123` |
+| adherent | `t.kabongo@mail.cd` | `adherent123` |
 
 ## Structure du projet
 
@@ -64,6 +72,13 @@ Ouvrir ensuite **http://localhost:3000**.
 ├── backend/
 │   ├── server.js              # point d'entrée Express
 │   ├── db.js                  # pool de connexion PostgreSQL
+│   ├── package.json           # projet npm (déps, scripts start/dev/db:*)
+│   ├── package-lock.json
+│   ├── Dockerfile             # image Docker autonome (Build Path = backend)
+│   ├── db/                    # schéma + seeds (une seule source)
+│   │   ├── schema_prod.sql    # schéma idempotent (dev et prod)
+│   │   ├── seed_demo.sql      # jeu de démonstration complet
+│   │   └── seed_prod.sql      # 2 comptes staff seulement (prod)
 │   ├── controllers/
 │   │   ├── auth.controller.js   # register, login, me
 │   │   ├── users.controller.js  # gestion des utilisateurs
@@ -83,20 +98,24 @@ Ouvrir ensuite **http://localhost:3000**.
 │   │   ├── validation.js        # validation des champs
 │   │   ├── logger.js            # logs des requêtes
 │   │   └── errorHandler.js      # gestion centralisée des erreurs
+│   ├── .env.example             # modèle de config (copié en .env)
 │   └── utils/
 │       └── response.js          # helpers { status, message, data }
 ├── frontend/
-│   ├── index.html             # SPA : login, Dashboard, Livres, Auteurs, Utilisateurs, Emprunts
-│   ├── css/style.css          # design system (sidebar, panels, badges, tables, modales, login)
-│   └── js/
-│       ├── app.js             # auth + navigation + lecture API
-│       ├── forms.js           # formulaires CRUD
-│       └── toast.js           # notifications visuelles
-├── db/
-│   ├── schema.sql             # recrée la base depuis zéro
-│   └── seed.sql               # données de test (users + hashes bcrypt)
-├── .env.example
-└── package.json
+│   ├── index.html             # tableau de bord (racine, redirect après login)
+│   ├── pages/                 # les autres pages HTML
+│   │   ├── login.html         # connexion
+│   │   ├── livres.html
+│   │   ├── auteurs.html
+│   │   ├── adherents.html
+│   │   ├── utilisateurs.html
+│   │   └── emprunts.html
+│   ├── assets/
+│   │   ├── css/style.css       # design system (sidebar, panels, badges, tables, modales, login)
+│   │   └── js/                 # JS + endpoint API config.js (généré en prod)
+│   └── docker-entrypoint.d/    # injection APP_API_URL → assets/js/config.js
+├── deploy.md                   # procédure Dokploy complète
+└── README.md
 ```
 
 ## API — endpoints

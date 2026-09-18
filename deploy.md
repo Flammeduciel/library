@@ -82,8 +82,8 @@ Au démarrage du conteneur, `backend/scripts/start.sh` exécute
 `backend/db/schema_prod.sql` — un schéma **idempotent** (comme le sont les
 migrations d'un ORM) : les tables sont créées/mises à jour toutes seules au
 premier déploiement, rien à faire à la main, et relancer le conteneur ne casse
-rien. Le schéma de développement `db/schema.sql` est **destructif**
-(`DROP DATABASE`) et ne doit jamais être exécuté en production.
+rien. C'est le **seul** schéma du dépôt (aussi utilisé en local) ; l'ancien
+schéma de développement destructif de `db/schema.sql` a été supprimé.
 
 Une fois déployé, attribue un domaine à cette application dans Dokploy (ex.
 `api.biblio.exemple.com`) et vérifie `https://<domaine>/api/health` → doit
@@ -98,7 +98,7 @@ Créer une deuxième **Application** dans Dokploy (même S3/registre, même dép
 - **Build Path** : `frontend`
 - **Dockerfile path** : `frontend/Dockerfile`
 - **Port** : `3000`
-- **Health check path** : `/` (ou `/login.html`)
+- **Health check path** : `/index.html`
 
 **Variables d'environnement** (⚠️ pour ce frontend statique, c'est ici dans
 "Environment Settings", pas en "Build Arguments" — voir l'encadré) :
@@ -113,14 +113,15 @@ Créer une deuxième **Application** dans Dokploy (même S3/registre, même dép
 > Argument. Ici le frontend est **statique** : le JavaScript est lu par le
 > navigateur *au chargement*, pas au build. La variable `APP_API_URL` est
 > donc écrite **au démarrage du conteneur**
-> (`frontend/docker-entrypoint.d/30-app-config.sh` régénère `js/config.js`),
+> (`frontend/docker-entrypoint.d/30-app-config.sh` régénère
+> `assets/js/config.js`),
 > par le script officiel `/docker-entrypoint.d/` de l'image nginx. Elle doit
 > aller dans **Environment Settings**. Un conteneur relancé avec une nouvelle
 > valeur relit la nouvelle valeur sans rebuild.
 >
-> Si `APP_API_URL` est absente **ou vide**, `js/config.js` garde la valeur
-> committée `window.APP_API_URL = ""` (même origine) : utile si on veut que
-> le frontend appelle `/api` sur son propre domaine (nécessite alors un
+> Si `APP_API_URL` est absente **ou vide**, `assets/js/config.js` garde la
+> valeur committée `window.APP_API_URL = ""` (même origine) : utile si on veut
+> que le frontend appelle `/api` sur son propre domaine (nécessite alors un
 > reverse proxy vers le backend — non couvert ici).
 
 Attribue un domaine au frontend (ex. `biblio.exemple.com`), puis retourne
@@ -210,7 +211,7 @@ PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" \
   `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME` sont corrects et
   utilisent le hostname **interne** Dokploy du service Postgres, et que le
   service Postgres est bien démarré avant le backend.
-- **`js/config.js` ne reflète pas `APP_API_URL`** : le script
+- **`assets/js/config.js` ne reflète pas `APP_API_URL`** : le script
   `/docker-entrypoint.d/30-app-config.sh` a besoin d'un *restart* du
   conteneur frontend après ajout/modification de la variable (un rebuild n'est
   pas nécessaire, la valeur est lue au démarrage).

@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  // Base de l'API : injectée par le conteneur nginx via js/config.js
+  // Base de l'API : injectée par le conteneur nginx via assets/js/config.js
   // (window.APP_API_URL, voir config.js + docker-entrypoint.d). Vide = même
   // origine (développement local, `npm run dev`).
   const API = (window.APP_API_URL || "").replace(/\/+$/, "");
@@ -15,9 +15,9 @@
   const requiredRole = document.body.dataset.roleRequired;
   if (page) {
     if (!token || !currentUser) {
-      location.replace("login.html");
+      location.replace("/login.html");
     } else if (requiredRole && currentUser.role !== requiredRole) {
-      location.replace("index.html");
+      location.replace("/index.html");
     }
   }
 
@@ -35,7 +35,7 @@
     currentUser = null;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    location.href = "login.html";
+    location.href = "/login.html";
   }
 
   const logoutBtn = document.getElementById("logout");
